@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Margot's Workouts 💪</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg:          #f5f4ef;
+  --surface:     #ffffff;
+  --surface2:    #eeede7;
+  --border:      #dddcd4;
+  --text:        #1a1a22;
+  --muted:       #888898;
+  --accent:      #7c4dff;
+  --accent-dim:  #f0ebff;
+  --accent-text: #5b30d6;
+  --green:       #16a34a;
+  --green-dim:   #f0fdf4;
+  --red:         #dc2626;
+  --yellow:      #d97706;
+  --shadow:      0 1px 4px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.04);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  overflow-x: hidden;
+  padding-bottom: 72px;
+}
+
+.view { min-height: calc(100vh - 72px); }
+.hidden { display: none !important; }
+
+/* ── Bottom Tab Bar ── */
+.tab-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  max-width: 480px; margin: 0 auto;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 30;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tab-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  padding: 10px 8px 12px; gap: 3px; border: none; background: none; cursor: pointer;
+  color: var(--muted); font-size: 11px; font-weight: 600; transition: color 0.15s;
+}
+.tab-btn .tab-icon { font-size: 22px; line-height: 1; }
+.tab-btn.active { color: var(--accent); }
+
+/* ── Section header (reused) ── */
+.page-header { padding: 52px 20px 20px; }
+.page-header h1 { font-size: 28px; font-weight: 800; }
+.page-header .sub { color: var(--muted); font-size: 14px; margin-top: 5px; }
+
+/* ══════════════════════════════
+   HOME
+══════════════════════════════ */
+.workout-list { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
+
+.wcard {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; padding: 15px 18px; cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform 0.12s, box-shadow 0.12s;
+  user-select: none; -webkit-user-select: none;
+}
+.wcard:active { transform: scale(0.97); box-shadow: none; }
+.wcard-emoji {
+  font-size: 30px; width: 52px; height: 52px;
+  background: var(--accent-dim); border-radius: 14px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.wcard-info { flex: 1; }
+.wcard-name { font-size: 16px; font-weight: 700; }
+.wcard-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.wcard-meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.wcard-arrow { color: var(--muted); font-size: 20px; }
+
+/* ══════════════════════════════
+   WORKOUT VIEW
+══════════════════════════════ */
+.workout-header {
+  position: sticky; top: 0; background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px; display: flex; align-items: center; gap: 12px; z-index: 20;
+}
+.back-btn {
+  width: 36px; height: 36px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 50%; color: var(--text); font-size: 18px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  box-shadow: var(--shadow);
+}
+.workout-header-name { font-size: 17px; font-weight: 700; }
+.workout-header-sub  { font-size: 12px; color: var(--muted); }
+
+/* Progress */
+.progress-container { padding: 12px 16px 4px; }
+.progress-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.progress-fill  { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.4s; }
+.progress-label { font-size: 11px; color: var(--muted); text-align: right; margin-top: 5px; }
+
+/* Section */
+.section { padding: 16px 16px 0; }
+.section-title {
+  font-size: 11px; font-weight: 700; letter-spacing: 1.4px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 10px; padding-left: 2px;
+}
+.superset-tag {
+  display: inline-block; background: var(--accent-dim); color: var(--accent-text);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+  padding: 3px 10px; border-radius: 20px; margin-bottom: 10px;
+}
+
+/* Exercise card */
+.ex-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 14px 16px; margin-bottom: 10px;
+  box-shadow: var(--shadow);
+}
+.ex-top {
+  display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px;
+}
+.ex-name { font-size: 16px; font-weight: 600; }
+.ex-info { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.rest-tag {
+  background: var(--surface2); border-radius: 8px; padding: 4px 9px;
+  font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0; margin-left: 8px;
+}
+
+/* Weight input */
+.weight-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.weight-label { font-size: 12px; color: var(--muted); }
+.weight-input {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 15px; font-weight: 700;
+  width: 72px; padding: 7px 10px; text-align: center; -webkit-appearance: none;
+}
+.weight-input:focus { outline: none; border-color: var(--accent); }
+.weight-unit { font-size: 12px; color: var(--muted); }
+
+/* Set buttons */
+.sets-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.set-btn {
+  min-width: 44px; height: 44px; border-radius: 12px;
+  border: 1.5px solid var(--border); background: var(--surface2);
+  color: var(--muted); font-size: 14px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; padding: 0 8px;
+}
+.set-btn.done { background: var(--green); border-color: var(--green); color: #fff; }
+.set-btn.next { background: var(--surface); border-color: var(--accent); color: var(--accent); font-weight: 800; }
+
+/* Stretch / hold */
+.stretch-row { display: flex; align-items: center; justify-content: space-between; }
+.stretch-dur { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.check-btn {
+  background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px;
+  color: var(--muted); font-size: 13px; font-weight: 700; padding: 9px 16px;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.check-btn.done { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+
+/* ── Circuit ── */
+.circuit-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--shadow);
+}
+.circuit-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+}
+.circuit-title { font-size: 15px; font-weight: 800; }
+.circuit-dots  { display: flex; gap: 6px; align-items: center; }
+.circuit-dot   {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--border);
+  transition: background 0.2s;
+}
+.circuit-dot.done   { background: var(--green); }
+.circuit-dot.active { background: var(--accent); }
+
+.circuit-ex {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 14px; border-radius: 12px; margin-bottom: 7px;
+  border: 1.5px solid var(--border); background: var(--surface2);
+  transition: all 0.25s;
+}
+.circuit-ex.checked { background: var(--green-dim); border-color: var(--green); }
+.circuit-ex.active  { background: var(--accent-dim); border-color: var(--accent); }
+.circuit-ex-left { flex: 1; }
+.circuit-ex-name { font-size: 15px; font-weight: 600; }
+.circuit-ex-reps { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.circuit-ex-actions { display: flex; gap: 7px; align-items: center; flex-shrink: 0; }
+.circuit-play-btn {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  background: var(--accent); border: none; color: #fff;
+  font-size: 13px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.15s;
+}
+.circuit-play-btn:active { opacity: 0.8; }
+.circuit-check {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  border: 2px solid var(--border); background: var(--surface);
+  color: transparent; font-size: 16px; font-weight: 800;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.circuit-ex.checked .circuit-check { background: var(--green); border-color: var(--green); color: #fff; }
+.circuit-ex.active  .circuit-check { border-color: var(--accent); }
+
+.circuit-start-btn {
+  width: 100%; padding: 14px; background: var(--accent); border: none;
+  border-radius: 13px; color: #fff; font-size: 15px; font-weight: 700;
+  cursor: pointer; margin-bottom: 4px;
+  box-shadow: 0 4px 14px rgba(124,77,255,0.25); transition: opacity 0.15s;
+}
+.circuit-start-btn:active { opacity: 0.85; }
+
+.circuit-next-btn {
+  width: 100%; padding: 14px; background: var(--accent); border: none;
+  border-radius: 13px; color: #fff; font-size: 15px; font-weight: 700;
+  cursor: pointer; margin-top: 6px;
+  box-shadow: 0 4px 14px rgba(124,77,255,0.25);
+  transition: opacity 0.15s;
+}
+.circuit-next-btn:active { opacity: 0.85; }
+.circuit-complete {
+  text-align: center; padding: 18px; background: var(--green-dim);
+  border: 1.5px solid var(--green); border-radius: 14px;
+}
+.circuit-complete-icon { font-size: 36px; display: block; margin-bottom: 6px; }
+.circuit-complete-text { font-size: 15px; font-weight: 700; color: var(--green); }
+
+/* Finish section */
+.finish-section { padding: 24px 16px 0; }
+.finish-btn {
+  width: 100%; padding: 16px; background: var(--accent); border: none;
+  border-radius: 14px; color: #fff; font-size: 17px; font-weight: 700;
+  cursor: pointer; transition: opacity 0.15s; box-shadow: 0 4px 16px rgba(124,77,255,0.3);
+}
+.finish-btn:active { opacity: 0.85; }
+
+/* Info view (Run day) */
+.info-view { padding: 32px 16px; text-align: center; }
+.info-view .big-emoji { font-size: 64px; margin-bottom: 16px; display: block; }
+.info-view h2 { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
+.info-view p { color: var(--muted); line-height: 1.7; font-size: 15px; }
+.tip-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 16px 20px; margin-top: 20px; text-align: left;
+  box-shadow: var(--shadow);
+}
+.tip-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+.tip-card li { color: var(--muted); font-size: 14px; line-height: 1.9; margin-left: 18px; }
+
+/* Celebration */
+.celebration { text-align: center; padding: 40px 20px; }
+.celebration .trophy { font-size: 72px; display: block; margin-bottom: 16px; }
+.celebration h2 { font-size: 26px; font-weight: 800; margin-bottom: 10px; }
+.celebration p { color: var(--muted); font-size: 15px; line-height: 1.6; }
+
+/* ══════════════════════════════
+   HISTORY VIEW
+══════════════════════════════ */
+.week-grid-card {
+  margin: 0 16px 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; padding: 16px 18px; box-shadow: var(--shadow);
+}
+.week-grid-title {
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--muted); margin-bottom: 14px;
+}
+.week-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.week-day { text-align: center; }
+.week-day-label {
+  font-size: 10px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; margin-bottom: 6px;
+}
+.week-day-dot {
+  width: 38px; height: 38px; border-radius: 12px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; background: var(--surface2); border: 1.5px solid var(--border);
+}
+.week-day-dot.today { border-color: var(--accent); background: var(--accent-dim); }
+.week-day-dot.worked { background: var(--accent-dim); border-color: var(--accent); }
+.week-day-dot.rest { font-size: 10px; color: var(--muted); }
+
+.history-list { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
+.history-section-title {
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--muted); margin-bottom: 10px; padding-left: 2px;
+}
+
+.h-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 14px 16px; cursor: pointer;
+  box-shadow: var(--shadow); transition: transform 0.12s;
+  user-select: none; -webkit-user-select: none;
+}
+.h-card:active { transform: scale(0.98); }
+.h-card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.h-card-emoji {
+  font-size: 26px; width: 44px; height: 44px; background: var(--accent-dim);
+  border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.h-card-name { font-size: 16px; font-weight: 700; }
+.h-card-date { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.h-card-bar-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.h-card-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; }
+.h-card-stats { display: flex; justify-content: space-between; margin-top: 6px; }
+.h-card-stat { font-size: 11px; color: var(--muted); }
+.h-card-stat span { color: var(--text); font-weight: 700; }
+
+.empty-history {
+  text-align: center; padding: 48px 24px; color: var(--muted);
+}
+.empty-history .icon { font-size: 48px; margin-bottom: 12px; display: block; }
+.empty-history p { font-size: 15px; line-height: 1.6; }
+
+/* ── History Detail View ── */
+.hd-header {
+  position: sticky; top: 0; background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px; display: flex; align-items: center; gap: 12px; z-index: 20;
+}
+.hd-hero {
+  text-align: center; padding: 24px 20px 20px;
+}
+.hd-hero .big-emoji { font-size: 52px; display: block; margin-bottom: 10px; }
+.hd-hero h2 { font-size: 22px; font-weight: 800; }
+.hd-hero .hd-date { color: var(--muted); font-size: 14px; margin-top: 4px; }
+.hd-hero .hd-completion {
+  display: inline-block; background: var(--accent-dim); color: var(--accent-text);
+  font-size: 13px; font-weight: 700; padding: 4px 14px; border-radius: 20px; margin-top: 10px;
+}
+
+.hd-ex-list { padding: 0 16px; }
+.hd-ex-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 12px 16px; margin-bottom: 8px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: var(--shadow);
+}
+.hd-ex-name { font-size: 15px; font-weight: 600; }
+.hd-ex-detail { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.hd-ex-right { text-align: right; flex-shrink: 0; margin-left: 12px; }
+.hd-ex-sets { font-size: 14px; font-weight: 700; color: var(--green); }
+.hd-ex-weight { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.hd-ex-skip { color: var(--muted); font-size: 12px; }
+
+/* ── Rest Timer ── */
+.timer-overlay {
+  position: fixed; inset: 0; max-width: 480px; margin: 0 auto;
+  background: rgba(0,0,0,0.35); display: flex; align-items: flex-end; z-index: 50;
+}
+.timer-overlay.hidden { display: none; }
+.timer-sheet {
+  width: 100%; background: var(--surface);
+  border-radius: 26px 26px 0 0; padding: 20px 24px 44px;
+  border-top: 1px solid var(--border);
+  animation: slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.1);
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.timer-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.timer-label { text-align: center; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; }
+.timer-ex-name { text-align: center; font-size: 15px; font-weight: 600; margin-top: 4px; margin-bottom: 10px; }
+.timer-number {
+  text-align: center; font-size: 78px; font-weight: 900;
+  font-variant-numeric: tabular-nums; letter-spacing: -3px; line-height: 1; color: var(--text);
+}
+.timer-number.warn { color: var(--yellow); }
+.timer-number.go   { color: var(--green); font-size: 48px; letter-spacing: 0; }
+.timer-progress-track { height: 5px; background: var(--border); border-radius: 3px; margin: 16px 0; overflow: hidden; }
+.timer-progress-bar { height: 100%; background: var(--accent); border-radius: 3px; transition: width 1s linear; }
+.timer-actions { display: flex; gap: 10px; }
+.timer-action-btn {
+  flex: 1; padding: 14px; border-radius: 14px; border: 1px solid var(--border);
+  font-size: 15px; font-weight: 700; cursor: pointer; background: var(--surface2);
+}
+.timer-action-btn.skip { color: var(--muted); }
+.timer-action-btn.add  { color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- ── HOME VIEW ── -->
+<div id="home-view" class="view">
+  <div class="page-header">
+    <h1 id="home-greeting">Hey Margot 👋</h1>
+    <div class="sub" id="home-date"></div>
+  </div>
+  <div class="workout-list" id="workout-list"></div>
+</div>
+
+<!-- ── WORKOUT VIEW ── -->
+<div id="workout-view" class="view hidden">
+  <div class="workout-header">
+    <button class="back-btn" onclick="showHome()">←</button>
+    <div>
+      <div class="workout-header-name" id="wv-name"></div>
+      <div class="workout-header-sub"  id="wv-sub"></div>
+    </div>
+  </div>
+  <div class="progress-container" id="progress-container">
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="progress-label" id="progress-label">0 / 0 sets</div>
+  </div>
+  <div id="workout-content"></div>
+  <div class="finish-section" id="finish-section">
+    <button class="finish-btn" onclick="finishWorkout()">✓ Finish Workout</button>
+  </div>
+</div>
+
+<!-- ── HISTORY VIEW ── -->
+<div id="history-view" class="view hidden">
+  <div class="page-header">
+    <h1>History</h1>
+    <div class="sub" id="history-sub">Your past sessions</div>
+  </div>
+  <div id="week-grid-container"></div>
+  <div class="history-list" id="history-list"></div>
+</div>
+
+<!-- ── HISTORY DETAIL VIEW ── -->
+<div id="history-detail-view" class="view hidden">
+  <div class="hd-header">
+    <button class="back-btn" onclick="showHistory()">←</button>
+    <div>
+      <div class="workout-header-name">Session Detail</div>
+    </div>
+  </div>
+  <div id="history-detail-content"></div>
+</div>
+
+<!-- ── BOTTOM TAB BAR ── -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-home" onclick="showHome()">
+    <span class="tab-icon">🏋️‍♀️</span>
+    Workouts
+  </button>
+  <button class="tab-btn" id="tab-history" onclick="showHistory()">
+    <span class="tab-icon">📅</span>
+    History
+  </button>
+</div>
+
+<!-- ── REST TIMER ── -->
+<div class="timer-overlay hidden" id="timer-overlay" onclick="handleOverlayClick(event)">
+  <div class="timer-sheet" onclick="event.stopPropagation()">
+    <div class="timer-handle"></div>
+    <div class="timer-label" id="timer-label">Rest</div>
+    <div class="timer-ex-name" id="timer-ex-name"></div>
+    <div class="timer-number" id="timer-display">2:00</div>
+    <div class="timer-progress-track">
+      <div class="timer-progress-bar" id="timer-bar" style="width:100%"></div>
+    </div>
+    <div class="timer-actions">
+      <button class="timer-action-btn skip" onclick="skipTimer()">Skip rest</button>
+      <button class="timer-action-btn add"  onclick="addTime(30)">+30s</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// WORKOUT DATA
+// ═══════════════════════════════════════════
+const WORKOUTS = [
+  {
+    id: 'leg-a',
+    name: 'Leg Day A',
+    subtitle: 'Glutes & Hamstrings',
+    emoji: '🍑',
+    sections: [
+      {
+        name: 'Warm-Up',
+        exercises: [
+          { id: 'gb',  name: 'Glute Bridge',       sets: 2, reps: '15',          rest: 45,  bw: true },
+          { id: 'blw', name: 'Banded Lateral Walk', sets: 2, reps: '12',          rest: 45,  bw: true }
+        ]
+      },
+      {
+        name: 'Main Lifts',
+        exercises: [
+          { id: 'ht-a', name: 'Hip Thrusts', sets: 4, reps: '10',      rest: 120 },
+          { id: 'dl',   name: 'Deadlift',    sets: 3, reps: '8',       rest: 150 },
+          { id: 'su',   name: 'Step Ups',    sets: 3, reps: '10 each', rest: 90  }
+        ]
+      },
+      {
+        name: 'Isolation',
+        exercises: [
+          { id: 'ck-a', name: 'Cable Kickback',  sets: 3, reps: '15', rest: 60 },
+          { id: 'slc',  name: 'Side-Lying Clam', sets: 3, reps: '20', rest: 60, bw: true }
+        ]
+      },
+      {
+        name: 'Stretch',
+        exercises: [
+          { id: 'pp', name: 'Pigeon Pose',             sets: 1, reps: '60s each side', rest: 0, stretch: true },
+          { id: 'f4', name: 'Figure 4 Glute Stretch',  sets: 1, reps: '45s each side', rest: 0, stretch: true }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'upper',
+    name: 'Upper Body',
+    subtitle: 'Push · Pull · Core',
+    emoji: '💪',
+    sections: [
+      {
+        name: 'Warm-Up',
+        exercises: [
+          { id: 'ub-ac', name: 'Arm Circles',        sets: 2, reps: '10 forward + 10 backward', rest: 30, bw: true },
+          { id: 'ub-sp', name: 'Scapular Push-Ups',  sets: 2, reps: '10',                       rest: 30, bw: true },
+          { id: 'ub-pa', name: 'Band Pull-Aparts',   sets: 2, reps: '15',                       rest: 30, bw: true }
+        ]
+      },
+      {
+        name: 'Push',
+        exercises: [
+          { id: 'pu', name: 'Push Ups',       sets: 4, reps: 'max reps', rest: 60, bw: true },
+          { id: 'sp', name: 'Shoulder Press', sets: 3, reps: '10',       rest: 90 }
+        ]
+      },
+      {
+        name: 'Pull',
+        exercises: [
+          { id: 'cbr', name: 'Cable Back Row', sets: 3, reps: '10', rest: 90 },
+          { id: 'fp',  name: 'Face Pulls',     sets: 3, reps: '15', rest: 60 }
+        ]
+      },
+      {
+        name: 'Superset',
+        superset: true,
+        exercises: [
+          { id: 'bc', name: 'Bicep Curl',      sets: 3, reps: '12', rest: 0  },
+          { id: 'tp', name: 'Tricep Pulldown', sets: 3, reps: '12', rest: 90 }
+        ]
+      },
+      {
+        name: 'Core',
+        exercises: [
+          { id: 'db',   name: 'Dead Bug',     sets: 3, reps: '8 each side', rest: 45, bw: true },
+          { id: 'pl',   name: 'Plank',        sets: 1, reps: '30s hold',    rest: 45, bw: true, stretch: true },
+          { id: 'palp', name: 'Pallof Press', sets: 3, reps: '10',          rest: 60 }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'leg-b',
+    name: 'Leg Day B',
+    subtitle: 'Quads & Full Legs',
+    emoji: '🦵',
+    sections: [
+      {
+        name: 'Warm-Up',
+        exercises: [
+          { id: 'ls',   name: 'Leg Swings',       sets: 1, reps: '10 each side', rest: 30, bw: true },
+          { id: 'bwsq', name: 'Bodyweight Squat', sets: 2, reps: '15',           rest: 30, bw: true }
+        ]
+      },
+      {
+        name: 'Main Lifts',
+        exercises: [
+          { id: 'ht-b', name: 'Hip Thrust (light)',    sets: 3, reps: '15–20',   rest: 90  },
+          { id: 'sq',   name: 'Back Squat',            sets: 3, reps: '8–10',    rest: 150 },
+          { id: 'bss',  name: 'Bulgarian Split Squat', sets: 3, reps: '10 each', rest: 120 }
+        ]
+      },
+      {
+        name: 'Isolation',
+        exercises: [
+          { id: 'cl-b', name: 'Clamshell',      sets: 3, reps: '15', rest: 60, bw: true },
+          { id: 'ck-b', name: 'Cable Kickback',  sets: 3, reps: '15', rest: 60 }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'run',
+    name: 'Run Day',
+    subtitle: '5K Training · Runna',
+    emoji: '🏃‍♀️',
+    info: true,
+    sections: []
+  },
+  {
+    id: 'cardio-abs',
+    name: 'Cardio + Abs',
+    subtitle: '30min Bike · Core Circuit',
+    emoji: '🚴‍♀️',
+    sections: [
+      {
+        name: 'Abs Circuit',
+        circuit: true,
+        rounds: 3,
+        restBetweenRounds: 90,
+        exercises: [
+          { id: 'ab1', name: 'Side Plank',          reps: '30s each side',              duration: 30, sides: true },
+          { id: 'ab2', name: 'Hollow Body Hold',     reps: 'Knees bent · 20–25s hold',   duration: 25 },
+          { id: 'ab3', name: 'Dead Bug',             reps: '6 each side · slow & drawn in', duration: 45 },
+          { id: 'ab4', name: 'Plank Shoulder Taps',  reps: '20 taps · hips still',       duration: 35 }
+        ]
+      },
+      {
+        name: 'Zone 2 Cardio',
+        exercises: [
+          { id: 'bike', name: 'Stationary Bike', sets: 1, reps: '30 minutes · Zone 2', rest: 0, stretch: true }
+        ]
+      },
+      {
+        name: 'Yoga Flow',
+        exercises: [
+          { id: 'yg1', name: "Child's Pose",       sets: 1, reps: '45s',           rest: 0, stretch: true },
+          { id: 'yg2', name: 'Cat-Cow',            sets: 1, reps: '8 slow reps',   rest: 0, stretch: true },
+          { id: 'yg3', name: 'Low Lunge',          sets: 1, reps: '30s each side', rest: 0, stretch: true },
+          { id: 'yg4', name: 'Pigeon Pose',        sets: 1, reps: '45s each side', rest: 0, stretch: true },
+          { id: 'yg5', name: 'Supine Twist',       sets: 1, reps: '30s each side', rest: 0, stretch: true },
+          { id: 'yg6', name: 'Happy Baby',         sets: 1, reps: '30s',           rest: 0, stretch: true },
+          { id: 'yg7', name: 'Savasana',           sets: 1, reps: '1 min',         rest: 0, stretch: true }
+        ]
+      }
+    ]
+  }
+];
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let currentWorkout  = null;
+let completedSets   = {};
+let weights         = {};
+let history         = [];   // array of past sessions
+let selectedSession = null;
+let timer = { active: false, seconds: 0, total: 0, name: '', interval: null };
+// Circuit state
+let circuitRound   = {}; // sectionKey → current round (1-indexed), > rounds means complete
+let circuitChecked = {}; // sectionKey → { exId: bool }
+let circuitActiveEx = {}; // sectionKey → currently-timing exId
+let timerOnComplete = null; // callback when timer hits 0 (or skip)
+
+// ═══════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════
+function loadStorage() {
+  try {
+    const w = localStorage.getItem('mw_weights');
+    if (w) weights = JSON.parse(w);
+    const h = localStorage.getItem('mw_history');
+    if (h) history = JSON.parse(h);
+  } catch(e) {}
+}
+function saveWeights() {
+  try { localStorage.setItem('mw_weights', JSON.stringify(weights)); } catch(e) {}
+}
+function saveHistory() {
+  try { localStorage.setItem('mw_history', JSON.stringify(history)); } catch(e) {}
+}
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+function setActiveTab(tab) {
+  document.getElementById('tab-home').classList.toggle('active', tab === 'home');
+  document.getElementById('tab-history').classList.toggle('active', tab === 'history');
+}
+
+function showHome() {
+  stopTimer();
+  currentWorkout = null; completedSets = {};
+  show('home-view'); hide('workout-view'); hide('history-view'); hide('history-detail-view');
+  setActiveTab('home');
+}
+
+function showWorkout(id) {
+  currentWorkout = WORKOUTS.find(w => w.id === id);
+  if (!currentWorkout) return;
+  completedSets = {}; circuitRound = {}; circuitChecked = {}; circuitActiveEx = {};
+  hide('home-view'); show('workout-view'); hide('history-view'); hide('history-detail-view');
+  document.getElementById('wv-name').textContent = currentWorkout.name;
+  document.getElementById('wv-sub').textContent  = currentWorkout.subtitle;
+  const showProgress = !currentWorkout.info;
+  document.getElementById('progress-container').style.display = showProgress ? '' : 'none';
+  document.getElementById('finish-section').style.display     = showProgress ? '' : 'none';
+  renderWorkoutContent();
+  updateProgress();
+  window.scrollTo(0, 0);
+}
+
+function showHistory() {
+  stopTimer();
+  hide('home-view'); hide('workout-view'); show('history-view'); hide('history-detail-view');
+  setActiveTab('history');
+  renderHistory();
+}
+
+function showHistoryDetail(sessionId) {
+  selectedSession = history.find(h => h.id === sessionId);
+  if (!selectedSession) return;
+  hide('history-view'); show('history-detail-view');
+  renderHistoryDetail();
+  window.scrollTo(0, 0);
+}
+
+function finishWorkout() {
+  stopTimer();
+  // Build history record
+  const allExercises = [];
+  for (const s of currentWorkout.sections)
+    for (const e of s.exercises)
+      allExercises.push(e);
+
+  const totalSets = allExercises.reduce((a, e) => a + e.sets, 0);
+  const doneSets  = allExercises.reduce((a, e) => a + Math.min(completedSets[e.id] || 0, e.sets), 0);
+
+  const record = {
+    id: Date.now().toString(),
+    date: new Date().toISOString(),
+    workoutId:   currentWorkout.id,
+    workoutName: currentWorkout.name,
+    emoji:       currentWorkout.emoji,
+    completedSets: { ...completedSets },
+    weights:       { ...weights },
+    totalSets,
+    doneSets,
+    exercises: allExercises.map(e => ({
+      id: e.id, name: e.name, sets: e.sets, reps: e.reps, bw: !!e.bw, stretch: !!e.stretch
+    }))
+  };
+  history.unshift(record);
+  if (history.length > 100) history = history.slice(0, 100);
+  saveHistory();
+
+  document.getElementById('workout-content').innerHTML = `
+    <div class="celebration">
+      <span class="trophy">🏆</span>
+      <h2>Workout done!</h2>
+      <p>Amazing work, Margot. That's another session in the books — you're getting stronger every week 💜</p>
+    </div>`;
+  document.getElementById('finish-section').innerHTML = `
+    <button class="finish-btn" onclick="showHome()">← Back to Workouts</button>`;
+}
+
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+
+// ═══════════════════════════════════════════
+// RENDER HOME
+// ═══════════════════════════════════════════
+function renderHome() {
+  const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now = new Date();
+  document.getElementById('home-date').textContent =
+    `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+
+  document.getElementById('workout-list').innerHTML = WORKOUTS.map(w => {
+    const totalSets = w.sections.reduce((a, s) => a + s.exercises.reduce((b, e) => b + e.sets, 0), 0);
+    const meta = w.info ? 'Follow your Runna plan' : totalSets > 0 ? `${totalSets} sets total` : '';
+    return `
+      <div class="wcard" onclick="showWorkout('${w.id}')">
+        <div class="wcard-emoji">${w.emoji}</div>
+        <div class="wcard-info">
+          <div class="wcard-name">${w.name}</div>
+          <div class="wcard-sub">${w.subtitle}</div>
+          ${meta ? `<div class="wcard-meta">${meta}</div>` : ''}
+        </div>
+        <div class="wcard-arrow">›</div>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// RENDER WORKOUT
+// ═══════════════════════════════════════════
+function renderWorkoutContent() {
+  const el = document.getElementById('workout-content');
+  if (currentWorkout.info) {
+    el.innerHTML = `
+      <div class="info-view">
+        <span class="big-emoji">${currentWorkout.emoji}</span>
+        <h2>Run Day</h2>
+        <p>Follow today's Runna session and crush it. Every run gets you closer to that 5K! 🏃‍♀️</p>
+        <div class="tip-card">
+          <h3>Tips for today</h3>
+          <ul>
+            <li>Warm up with 5 min easy walking pace</li>
+            <li>Trust the Runna pacing — don't go out too fast</li>
+            <li>Cool down with a 5 min walk after</li>
+            <li>Hydrate before, during, and after</li>
+            <li>Log your effort in Runna once done</li>
+          </ul>
+        </div>
+      </div>`;
+    return;
+  }
+  let html = '';
+  for (const section of currentWorkout.sections) {
+    html += `<div class="section"><div class="section-title">${section.name}</div>`;
+    if (section.circuit) {
+      const key = circuitKey(section);
+      html += `<div id="circuit-${key}">${renderCircuit(section)}</div>`;
+    } else {
+      if (section.superset)
+        html += `<div class="superset-tag">⚡ Superset — no rest between exercises</div>`;
+      for (const ex of section.exercises) html += renderExCard(ex);
+    }
+    html += `</div>`;
+  }
+  el.innerHTML = html;
+}
+
+function fmtRest(rest) {
+  if (!rest) return '';
+  return rest >= 60 ? `${rest / 60}min rest` : `${rest}s rest`;
+}
+
+function renderExCard(ex) {
+  const rl = fmtRest(ex.rest);
+  if (ex.stretch) {
+    const done = (completedSets[ex.id] || 0) >= 1;
+    return `
+      <div class="ex-card" id="card-${ex.id}">
+        <div class="stretch-row">
+          <div>
+            <div class="ex-name">${ex.name}</div>
+            <div class="stretch-dur">${ex.reps}</div>
+          </div>
+          <button class="check-btn ${done ? 'done' : ''}" onclick="toggleStretch('${ex.id}')">
+            ${done ? '✓ Done' : 'Mark done'}
+          </button>
+        </div>
+      </div>`;
+  }
+  const savedW = weights[ex.id] || '';
+  const weightRow = ex.bw
+    ? `<div class="weight-row"><span class="weight-label">Bodyweight</span></div>`
+    : `<div class="weight-row">
+         <span class="weight-label">Weight</span>
+         <input class="weight-input" type="number" inputmode="decimal"
+                id="w-${ex.id}" value="${savedW}" placeholder="—"
+                onchange="saveWeight('${ex.id}', this.value)">
+         <span class="weight-unit">kg</span>
+       </div>`;
+  const done = completedSets[ex.id] || 0;
+  let setHtml = '';
+  for (let i = 1; i <= ex.sets; i++) {
+    const cls = i <= done ? 'done' : (i === done + 1 ? 'next' : '');
+    setHtml += `<button class="set-btn ${cls}"
+                        onclick="toggleSet('${ex.id}',${i},${ex.rest},'${ex.name}')">
+                  ${i <= done ? '✓' : i}
+                </button>`;
+  }
+  return `
+    <div class="ex-card" id="card-${ex.id}">
+      <div class="ex-top">
+        <div>
+          <div class="ex-name">${ex.name}</div>
+          <div class="ex-info">${ex.sets} sets × ${ex.reps}</div>
+        </div>
+        ${rl ? `<div class="rest-tag">⏱ ${rl}</div>` : ''}
+      </div>
+      ${weightRow}
+      <div class="sets-row" id="sets-${ex.id}">${setHtml}</div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════
+// CIRCUIT
+// ═══════════════════════════════════════════
+function circuitKey(section) {
+  return (currentWorkout.id + '-' + section.name).replace(/[^a-z0-9]/gi, '_');
+}
+
+function renderCircuit(section) {
+  const key      = circuitKey(section);
+  const round    = circuitRound[key]    || 1;
+  const checked  = circuitChecked[key]  || {};
+  const activeEx = circuitActiveEx[key] || null;
+  const complete = round > section.rounds;
+  const allDone  = section.exercises.every(e => checked[e.id]);
+  const anyTimerRunning = !!activeEx;
+
+  // Round dots
+  let dots = '';
+  for (let i = 1; i <= section.rounds; i++) {
+    const cls = i < round ? 'done' : (i === round && !complete ? 'active' : '');
+    dots += `<div class="circuit-dot ${cls}"></div>`;
+  }
+
+  let html = `<div class="circuit-card">
+    <div class="circuit-header">
+      <div class="circuit-title">${complete ? '✓ Circuit Complete!' : `Round ${round} of ${section.rounds}`}</div>
+      <div class="circuit-dots">${dots}</div>
+    </div>`;
+
+  if (complete) {
+    html += `<div class="circuit-complete">
+      <span class="circuit-complete-icon">💪</span>
+      <div class="circuit-complete-text">All ${section.rounds} rounds done — great work!</div>
+    </div>`;
+  } else {
+    // "Start Round" button (shown when no timer is running and round hasn't been started)
+    if (!anyTimerRunning && !allDone) {
+      const firstUnchecked = section.exercises.findIndex(e => !checked[e.id]);
+      if (firstUnchecked === 0) {
+        // Round not yet started — show big Start button
+        html += `<button class="circuit-start-btn" onclick="startCircuitRound('${key}')">▶ Start Round ${round}</button>`;
+      }
+    }
+
+    // Exercise rows
+    section.exercises.forEach((ex, i) => {
+      const isDone   = checked[ex.id]  || false;
+      const isActive = activeEx === ex.id;
+      let rowClass   = isDone ? 'checked' : (isActive ? 'active' : '');
+
+      html += `<div class="circuit-ex ${rowClass}" id="cex-${key}-${ex.id}">
+        <div class="circuit-ex-left">
+          <div class="circuit-ex-name">${ex.name}</div>
+          <div class="circuit-ex-reps">${isActive ? '⏱ Running…' : ex.reps}</div>
+        </div>
+        <div class="circuit-ex-actions">`;
+
+      if (!isDone && !isActive && ex.duration && !anyTimerRunning) {
+        // Per-exercise play button (shown when not running and no other timer active)
+        html += `<button class="circuit-play-btn" title="Start timer" onclick="startCircuitExByIdx('${key}',${i})">▶</button>`;
+      }
+      html += `<button class="circuit-check" onclick="toggleCircuitEx('${key}','${ex.id}')">✓</button>
+        </div>
+      </div>`;
+    });
+
+    // Action button when all done
+    if (allDone) {
+      const isLast = round >= section.rounds;
+      html += isLast
+        ? `<button class="circuit-next-btn" onclick="completeCircuit('${key}')">🎉 Finish Circuit!</button>`
+        : `<button class="circuit-next-btn" onclick="nextCircuitRound('${key}',${section.restBetweenRounds},${section.rounds})">Rest ${section.restBetweenRounds}s → Round ${round + 1}</button>`;
+    }
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+function toggleCircuitEx(key, exId) {
+  if (!circuitChecked[key]) circuitChecked[key] = {};
+  circuitChecked[key][exId] = !circuitChecked[key][exId];
+  rerenderCircuit(key);
+  updateProgress();
+}
+
+function nextCircuitRound(key, restSecs, totalRounds) {
+  const round = circuitRound[key] || 1;
+  startTimer(restSecs, `Round ${round + 1} of ${totalRounds}`);
+  circuitRound[key]   = round + 1;
+  circuitChecked[key] = {};
+  rerenderCircuit(key);
+  updateProgress();
+}
+
+function completeCircuit(key) {
+  const section = findCircuitSection(key);
+  if (!section) return;
+  circuitRound[key] = section.rounds + 1;
+  rerenderCircuit(key);
+  updateProgress();
+}
+
+function rerenderCircuit(key) {
+  const el = document.getElementById(`circuit-${key}`);
+  const section = findCircuitSection(key);
+  if (el && section) el.innerHTML = renderCircuit(section);
+}
+
+function findCircuitSection(key) {
+  if (!currentWorkout) return null;
+  for (const s of currentWorkout.sections)
+    if (s.circuit && circuitKey(s) === key) return s;
+  return null;
+}
+
+function startCircuitRound(key) {
+  const section = findCircuitSection(key);
+  if (!section) return;
+  const checked = circuitChecked[key] || {};
+  const firstUnchecked = section.exercises.findIndex(e => !checked[e.id]);
+  if (firstUnchecked === -1) return;
+  startCircuitExByIdx(key, firstUnchecked);
+}
+
+function startCircuitExByIdx(key, exIndex) {
+  const section = findCircuitSection(key);
+  if (!section) return;
+  const ex = section.exercises[exIndex];
+  if (!ex) return;
+
+  circuitActiveEx[key] = ex.id;
+  rerenderCircuit(key);
+
+  function onExDone() {
+    // Auto-check this exercise
+    if (!circuitChecked[key]) circuitChecked[key] = {};
+    circuitChecked[key][ex.id] = true;
+    circuitActiveEx[key] = null;
+    updateProgress();
+
+    // Find next unchecked exercise
+    const nextIdx = section.exercises.findIndex((e, i) => i > exIndex && !circuitChecked[key][e.id]);
+    if (nextIdx !== -1) {
+      // Brief pause then auto-start next exercise
+      rerenderCircuit(key);
+      setTimeout(() => startCircuitExByIdx(key, nextIdx), 600);
+    } else {
+      // All done — show rest/finish button
+      rerenderCircuit(key);
+    }
+  }
+
+  if (ex.sides) {
+    // Two-phase: right side → left side
+    startTimerWithCallback(ex.duration, `${ex.name} — Right side`, () => {
+      startTimerWithCallback(ex.duration, `${ex.name} — Left side`, onExDone);
+    });
+  } else {
+    startTimerWithCallback(ex.duration, ex.name, onExDone);
+  }
+}
+
+// ═══════════════════════════════════════════
+// RENDER HISTORY
+// ═══════════════════════════════════════════
+function renderHistory() {
+  renderWeekGrid();
+  const listEl = document.getElementById('history-list');
+  if (history.length === 0) {
+    listEl.innerHTML = `
+      <div class="empty-history">
+        <span class="icon">📋</span>
+        <p>No sessions logged yet. Finish your first workout and it'll show up here!</p>
+      </div>`;
+    return;
+  }
+  // Group by week (simple: just show all, newest first)
+  listEl.innerHTML = `
+    <div class="history-section-title">Recent Sessions</div>
+    ${history.map(s => renderHistoryCard(s)).join('')}`;
+}
+
+function renderWeekGrid() {
+  const container = document.getElementById('week-grid-container');
+  const dayNames = ['M','T','W','T','F','S','S'];
+  const now = new Date();
+  // Get Monday of current week
+  const dayOfWeek = now.getDay(); // 0=Sun
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + mondayOffset);
+
+  // Build set of date strings that had workouts this week
+  const workedDays = {};
+  for (const s of history) {
+    const d = new Date(s.date);
+    const key = d.toDateString();
+    workedDays[key] = s;
+  }
+
+  let dotsHtml = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const isToday = d.toDateString() === now.toDateString();
+    const session = workedDays[d.toDateString()];
+    const dotClass = session ? 'worked' : (isToday ? 'today' : '');
+    const dotContent = session ? session.emoji : (isToday ? '·' : '');
+    dotsHtml += `
+      <div class="week-day">
+        <div class="week-day-label">${dayNames[i]}</div>
+        <div class="week-day-dot ${dotClass}"
+             ${session ? `onclick="showHistoryDetail('${session.id}')" style="cursor:pointer"` : ''}>
+          ${dotContent || '<span class="rest">—</span>'}
+        </div>
+      </div>`;
+  }
+
+  container.innerHTML = `
+    <div class="week-grid-card">
+      <div class="week-grid-title">This Week</div>
+      <div class="week-days">${dotsHtml}</div>
+    </div>`;
+}
+
+function renderHistoryCard(s) {
+  const d    = new Date(s.date);
+  const pct  = s.totalSets > 0 ? Math.round(s.doneSets / s.totalSets * 100) : 0;
+  const dateStr = formatDate(d);
+  return `
+    <div class="h-card" onclick="showHistoryDetail('${s.id}')">
+      <div class="h-card-top">
+        <div class="h-card-emoji">${s.emoji}</div>
+        <div>
+          <div class="h-card-name">${s.workoutName}</div>
+          <div class="h-card-date">${dateStr}</div>
+        </div>
+      </div>
+      <div class="h-card-bar-track">
+        <div class="h-card-bar-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="h-card-stats">
+        <span class="h-card-stat"><span>${s.doneSets}</span> / ${s.totalSets} sets</span>
+        <span class="h-card-stat"><span>${pct}%</span> complete</span>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════
+// RENDER HISTORY DETAIL
+// ═══════════════════════════════════════════
+function renderHistoryDetail() {
+  const s   = selectedSession;
+  const pct = s.totalSets > 0 ? Math.round(s.doneSets / s.totalSets * 100) : 0;
+  const d   = new Date(s.date);
+
+  let exRows = s.exercises.map(e => {
+    const done   = Math.min(s.completedSets[e.id] || 0, e.sets);
+    const w      = s.weights[e.id];
+    const skipped = done === 0;
+    if (e.stretch) {
+      const isDone = (s.completedSets[e.id] || 0) >= 1;
+      return `
+        <div class="hd-ex-item">
+          <div>
+            <div class="hd-ex-name">${e.name}</div>
+            <div class="hd-ex-detail">${e.reps}</div>
+          </div>
+          <div class="hd-ex-right">
+            <div class="hd-ex-sets" style="${isDone ? '' : 'color:var(--muted)'}">
+              ${isDone ? '✓ Done' : '—'}
+            </div>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="hd-ex-item" style="${skipped ? 'opacity:0.5' : ''}">
+        <div style="flex:1">
+          <div class="hd-ex-name">${e.name}</div>
+          <div class="hd-ex-detail">${e.sets} sets × ${e.reps}</div>
+        </div>
+        <div class="hd-ex-right">
+          <div class="hd-ex-sets">${done} / ${e.sets} sets</div>
+          <div class="hd-ex-weight">${e.bw ? 'Bodyweight' : (w ? w + ' kg' : '—')}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('history-detail-content').innerHTML = `
+    <div class="hd-hero">
+      <span class="big-emoji">${s.emoji}</span>
+      <h2>${s.workoutName}</h2>
+      <div class="hd-date">${formatDate(d, true)}</div>
+      <div class="hd-completion">${pct}% complete · ${s.doneSets} / ${s.totalSets} sets</div>
+    </div>
+    <div class="hd-ex-list">${exRows}</div>`;
+}
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function formatDate(d, long = false) {
+  const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now = new Date();
+  if (!long) {
+    const diffMs = now - d;
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7)  return `${diffDays} days ago`;
+  }
+  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+}
+
+// ═══════════════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════════════
+function saveWeight(id, val) { weights[id] = val; saveWeights(); }
+
+function toggleSet(id, setNum, restSecs, exName) {
+  const current = completedSets[id] || 0;
+  if (setNum === current + 1) {
+    completedSets[id] = setNum;
+    if (restSecs > 0) startTimer(restSecs, exName);
+  } else if (setNum === current) {
+    completedSets[id] = Math.max(0, current - 1);
+  }
+  refreshSets(id);
+  updateProgress();
+}
+
+function toggleStretch(id) {
+  completedSets[id] = (completedSets[id] || 0) >= 1 ? 0 : 1;
+  const card = document.getElementById(`card-${id}`);
+  if (!card) return;
+  const btn = card.querySelector('.check-btn');
+  const isDone = (completedSets[id] || 0) >= 1;
+  btn.className = `check-btn ${isDone ? 'done' : ''}`;
+  btn.textContent = isDone ? '✓ Done' : 'Mark done';
+  updateProgress();
+}
+
+function refreshSets(id) {
+  const setsEl = document.getElementById(`sets-${id}`);
+  const ex     = findEx(id);
+  if (!setsEl || !ex) return;
+  const done = completedSets[id] || 0;
+  let html = '';
+  for (let i = 1; i <= ex.sets; i++) {
+    const cls = i <= done ? 'done' : (i === done + 1 ? 'next' : '');
+    html += `<button class="set-btn ${cls}"
+                     onclick="toggleSet('${ex.id}',${i},${ex.rest},'${ex.name}')">
+               ${i <= done ? '✓' : i}
+             </button>`;
+  }
+  setsEl.innerHTML = html;
+}
+
+function findEx(id) {
+  if (!currentWorkout) return null;
+  for (const s of currentWorkout.sections)
+    for (const e of s.exercises)
+      if (e.id === id) return e;
+  return null;
+}
+
+function updateProgress() {
+  if (!currentWorkout || currentWorkout.info) return;
+  let total = 0, done = 0;
+  for (const s of currentWorkout.sections) {
+    if (s.circuit) {
+      const key        = circuitKey(s);
+      const round      = circuitRound[key] || 1;
+      const checked    = circuitChecked[key] || {};
+      const isComplete = round > s.rounds;
+      const exCount    = s.exercises.length;
+      total += s.rounds * exCount;
+      done  += isComplete
+        ? s.rounds * exCount
+        : (round - 1) * exCount + s.exercises.filter(e => checked[e.id]).length;
+    } else {
+      for (const e of s.exercises) {
+        total += e.sets;
+        done  += Math.min(completedSets[e.id] || 0, e.sets);
+      }
+    }
+  }
+  const pct = total > 0 ? (done / total * 100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = `${done} / ${total} sets`;
+}
+
+// ═══════════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════════
+function startTimer(seconds, name) {
+  startTimerWithCallback(seconds, name, null);
+}
+function startTimerWithCallback(seconds, name, onComplete) {
+  stopTimer();
+  timerOnComplete = onComplete;
+  timer = { active: true, seconds, total: seconds, name, interval: null };
+  timer.interval = setInterval(tick, 1000);
+  // Keep overlay open if already visible (smooth auto-advance); open it if hidden
+  const overlay = document.getElementById('timer-overlay');
+  overlay.classList.remove('hidden');
+  document.getElementById('timer-label').textContent = onComplete ? 'Exercise' : 'Rest';
+  document.getElementById('timer-ex-name').textContent = name;
+  renderTimer();
+}
+function tick() {
+  if (timer.seconds <= 0) {
+    stopTimer();
+    renderTimer(); // show "Go!" / "Next!"
+    const cb = timerOnComplete;
+    timerOnComplete = null;
+    if (cb) {
+      // Auto-advance: brief pause then fire callback (keeps overlay visible for transition)
+      setTimeout(cb, 1200);
+    } else {
+      setTimeout(() => { closeTimer(); }, 2000);
+    }
+    return;
+  }
+  timer.seconds--;
+  renderTimer();
+}
+function renderTimer() {
+  const disp = document.getElementById('timer-display');
+  const bar  = document.getElementById('timer-bar');
+  if (timer.seconds <= 0) {
+    const isCircuit = document.getElementById('timer-label').textContent === 'Exercise';
+    disp.textContent = isCircuit ? 'Next! 💜' : 'Go! 💜';
+    disp.className = 'timer-number go'; bar.style.width = '0%'; return;
+  }
+  const m = Math.floor(timer.seconds / 60);
+  const s = timer.seconds % 60;
+  disp.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+  disp.className   = timer.seconds <= 10 ? 'timer-number warn' : 'timer-number';
+  bar.style.width  = (timer.seconds / timer.total * 100) + '%';
+}
+function skipTimer() {
+  const cb = timerOnComplete;
+  timerOnComplete = null;
+  stopTimer();
+  closeTimer();
+  if (cb) cb(); // honour callback on skip too (auto-advance circuit)
+}
+function addTime(s)   { timer.seconds += s; timer.total += s; renderTimer(); }
+function stopTimer()  { clearInterval(timer.interval); timer.active = false; timer.interval = null; }
+function closeTimer() { stopTimer(); timerOnComplete = null; document.getElementById('timer-overlay').classList.add('hidden'); }
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('timer-overlay')) skipTimer();
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+loadStorage();
+renderHome();
+</script>
+</body>
+</html>
